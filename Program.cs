@@ -1,9 +1,25 @@
+using Microsoft.AspNetCore.OData;
+using Microsoft.Extensions.Caching.Memory;
+using Wix_Technical_Test.Models;
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddOData(opt =>
+    {
+        opt.EnableQueryFeatures();
+    });
+
+// In memory data storage as we're not using a real server
+builder.Services.AddMemoryCache();
+
 
 var app = builder.Build();
+
+PopulateInitialStoreData(app.Services);
+
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -18,10 +34,30 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+
+
 app.UseAuthorization();
 
 app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+  name: "default",
+  pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
+
+
+void PopulateInitialStoreData(IServiceProvider services)
+{
+    using (var scope = services.CreateScope())
+    {
+        var memoryCache = scope.ServiceProvider.GetRequiredService<IMemoryCache>();
+        var items = new List<StoreModel>
+        {
+            new StoreModel { Id = "store-1", Title = "Gadget Haven", Content = "Find the latest in tech gadgets.", Views = 150, TimeStamp = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds() },
+            new StoreModel { Id = "store-2", Title = "Book World", Content = "Explore our vast collection of books.", Views = 200, TimeStamp = (int)DateTimeOffset.UtcNow.AddSeconds(-3600).ToUnixTimeSeconds() }, // 1 hour ago
+            new StoreModel { Id = "store-3", Title = "Fashion Hub", Content = "Your one-stop shop for the latest fashion trends.", Views = 250, TimeStamp = (int)DateTimeOffset.UtcNow.AddSeconds(-7200).ToUnixTimeSeconds() }, // 2 hours ago
+            new StoreModel { Id = "store-4", Title = "Home Essentials", Content = "Everything you need for a cozy home.", Views = 75, TimeStamp = (int)DateTimeOffset.UtcNow.AddSeconds(-10800).ToUnixTimeSeconds() }, // 3 hours ago
+            new StoreModel { Id = "store-5", Title = "Outdoor Adventures", Content = "Gear up for your next outdoor adventure.", Views = 125, TimeStamp = (int)DateTimeOffset.UtcNow.AddSeconds(-14400).ToUnixTimeSeconds() }  // 4 hours ago
+        };
+        memoryCache.Set("StoreData", items);
+    }
+}

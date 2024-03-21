@@ -7,4 +7,9 @@
     <RootNamespace>Wix_Technical_Test</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OData" Version="8.2.5" />
+    <PackageReference Include="Microsoft.OData.Core" Version="7.20.0" />
+  </ItemGroup>
+
 </Project>
