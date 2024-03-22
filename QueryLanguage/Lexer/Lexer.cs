@@ -76,7 +76,6 @@
                 return new SyntaxToken(SyntaxKind.CloseParenthesisToken, position, ")", null);
             }
 
-            //Comma
             if (Current == ',')
             {
                 var position = _position++;

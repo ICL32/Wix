@@ -15,6 +15,9 @@ builder.Services.AddControllersWithViews()
 // In memory data storage as we're not using a real server
 builder.Services.AddMemoryCache();
 
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+
 
 var app = builder.Build();
 
@@ -33,6 +36,7 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+app.UseDeveloperExceptionPage();
 
 
 

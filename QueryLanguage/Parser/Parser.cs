@@ -27,6 +27,20 @@ namespace Wix_Technical_Test.QueryLanguage.Parser
             _tokens = tokens.ToArray();
         }
 
+        /*public ExpressionSyntax Parse()
+        {
+            var left = ParsePrimaryExpression();
+
+            while (Current == SyntaxKind.PlusToken)
+        }*/
+
+        private SyntaxToken NextToken()
+        {
+            var current = Current;
+            _position++;
+            return current;
+        }
+
         private SyntaxToken Peek(int offset)
         {
             var index = _position + offset;

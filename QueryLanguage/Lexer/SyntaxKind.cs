@@ -17,5 +17,6 @@
         CloseParenthesisToken,
         BadToken,
         EndOfFileToken,
+        BinaryExpression,
     }
 }

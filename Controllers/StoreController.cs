@@ -3,6 +3,9 @@ using Microsoft.Extensions.Caching.Memory;
 using Wix_Technical_Test.Models;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.AspNetCore.OData.Query;
+using System.Linq;
+using Wix_Technical_Test.QueryLanguage_Alt;
+using System.Linq.Expressions;
 
 namespace Wix_Technical_Test.Controllers
 {
@@ -18,22 +21,41 @@ namespace Wix_Technical_Test.Controllers
             _memoryCache = memoryCache;
         }
 
-        // GET: api/store
         [HttpGet]
         [EnableQuery]
-        public ActionResult<IEnumerable<StoreModel>> GetStores()
+        public ActionResult<IEnumerable<StoreModel>> GetStores([FromQuery] string query)
         {
             if (!_memoryCache.TryGetValue(storeCacheKey, out List<StoreModel> stores))
             {
                 stores = new List<StoreModel>();
+                // You might want to populate the cache here if it's empty.
+                // PopulateInitialStoreData(...);
             }
 
-            var filterCriteria = Request.Query["filter"];
+            if (string.IsNullOrEmpty(query))
+            {
+                // If no query is provided, return all stores.
+                return Ok(stores);
+            }
 
-            IQueryable<StoreModel> filteredStores = stores.AsQueryable();
+            try
+            {
+                // Use the parser to get a LINQ expression from the query string
+                var parser = new ExpressionParser();
+                var predicate = parser.ParseExpression<StoreModel>(query);
 
+                // Use the resulting expression to filter the store list
+                var result = stores.AsQueryable().Where(predicate.Compile()).ToList();
 
-            return new OkObjectResult(stores.AsQueryable());
+                // Return the filtered list
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                // If there's an error in parsing or filtering, return a bad request response
+                Console.WriteLine(ex.Message);
+                return BadRequest(ex.Message);
+            }
         }
 
         // POST: api/store
