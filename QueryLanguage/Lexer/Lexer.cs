@@ -29,11 +29,14 @@
 
         public SyntaxToken NextToken()
         {
+
+            // End of File
             if (_position >= _text.Length)
             {
                 return new SyntaxToken(SyntaxKind.EndOfFileToken, _position, "\0", null);
             }
 
+            // Number Literals
             if (char.IsDigit(Current))
             {
                 var start = _position;
@@ -48,6 +51,7 @@
                 return new SyntaxToken(SyntaxKind.NumberLiteralToken, start, text, value);
             }
 
+            // Whitespace
             if (char.IsWhiteSpace(Current))
             {
                 var start = _position;
@@ -61,12 +65,30 @@
                 return new SyntaxToken(SyntaxKind.WhiteSpaceToken, start, text, null);
             }
 
+            if (Current == '(')
+            {
+                var position = _position++;
+                return new SyntaxToken(SyntaxKind.OpenParenthesisToken, position, "(", null);
+            }
+            if (Current == ')')
+            {
+                var position = _position++;
+                return new SyntaxToken(SyntaxKind.CloseParenthesisToken, position, ")", null);
+            }
+
+            //Comma
+            if (Current == ',')
+            {
+                var position = _position++;
+                return new SyntaxToken(SyntaxKind.CommaToken, position, ",", null);
+            }
+
             // Operators and Properties
             if (char.IsLetter(Current))
             {
                 var start = _position;
 
-                while (!char.IsWhiteSpace(Current))
+                while (char.IsLetter(Current) || Current == '_')
                     Next();
 
                 var length = _position - start;
@@ -95,15 +117,32 @@
                     return new SyntaxToken(SyntaxKind.PropertyToken, start, text, null);
             }
 
-            
-            if (Current.Equals("\""))
+            // String Literals
+            if (Current == '\"')
             {
-                var start = _position++;
+                Next(); // Consume the opening quotation mark
+                var start = _position;
 
+                while (Current != '\"' && Current != '\0')
+                    Next(); // Consume the string literal content
+
+                var length = _position - start;
+                var text = _text.Substring(start, length);
+
+                if (Current == '\"')
+                {
+                    Next(); // Consume the closing quotation mark
+                    return new SyntaxToken(SyntaxKind.StringLiteralToken, start, text, text);
+                }
+                else
+                {
+                    // Handle unterminated string
+                    return new SyntaxToken(SyntaxKind.BadToken, start, text, null);
+                }
             }
 
 
-            return new SyntaxToken(SyntaxKind.BadToken, _position++, _text.Substring(_position - 1, 1), null);
+            return new SyntaxToken(SyntaxKind.BadToken, _position, _text.Substring(_position, 1), null);
         }
     }
 }

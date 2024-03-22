@@ -2,16 +2,16 @@
 {
     public class SyntaxToken
     {
-        public SyntaxKind Type { get; }
+        public SyntaxKind Kind { get; }
         public string Text { get; }
         public int Position { get; }
         public object Value { get; }
 
 
-        public SyntaxToken(SyntaxKind type, int position, string text, object value)
+        public SyntaxToken(SyntaxKind kind, int position, string text, object value)
         {
             Text = text;
-            Type = type;
+            Kind = kind;
             Position = position;
             Value = value;
         }

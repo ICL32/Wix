@@ -14,7 +14,6 @@
 
   <ItemGroup>
     <Folder Include="QueryLanguage\Evaluator\" />
-    <Folder Include="Services\" />
   </ItemGroup>
 
 </Project>

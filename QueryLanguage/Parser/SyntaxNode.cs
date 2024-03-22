@@ -1,6 +1,9 @@
-﻿namespace Wix_Technical_Test.QueryLanguage.Parser
+﻿using Wix_Technical_Test.QueryLanguage.Lexer;
+
+namespace Wix_Technical_Test.QueryLanguage.Parser
 {
-    public class SyntaxNode
+    public abstract class SyntaxNode
     {
+        public abstract SyntaxKind Kind { get; }
     }
 }

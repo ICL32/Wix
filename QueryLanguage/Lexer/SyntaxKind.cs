@@ -8,6 +8,7 @@
         NotToken,
         GreaterThanToken,
         LessThanToken,
+        CommaToken,
         PropertyToken,
         StringLiteralToken,
         NumberLiteralToken,
