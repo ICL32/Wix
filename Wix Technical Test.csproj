@@ -12,4 +12,9 @@
     <PackageReference Include="Microsoft.OData.Core" Version="7.20.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="QueryLanguage\Evaluator\" />
+    <Folder Include="Services\" />
+  </ItemGroup>
+
 </Project>
