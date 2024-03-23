@@ -1,4 +1,4 @@
-namespace Wix_Technical_Test.Models
+namespace Wix.Models
 {
     public class ErrorViewModel
     {

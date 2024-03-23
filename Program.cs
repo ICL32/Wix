@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.OData;
 using Microsoft.Extensions.Caching.Memory;
-using Wix_Technical_Test.Models;
+using Wix.Models;
 
 
 var builder = WebApplication.CreateBuilder(args);

@@ -1,13 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
-using Wix_Technical_Test.Models;
+using Wix.Models;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.AspNetCore.OData.Query;
-using System.Linq;
-using Wix_Technical_Test.QueryLanguage_Alt;
-using System.Linq.Expressions;
+using Wix.QueryLanguage;
 
-namespace Wix_Technical_Test.Controllers
+namespace Wix.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -40,11 +38,9 @@ namespace Wix_Technical_Test.Controllers
 
             try
             {
-                // Use the parser to get a LINQ expression from the query string
                 var parser = new ExpressionParser();
                 var predicate = parser.ParseExpression<StoreModel>(query);
 
-                // Use the resulting expression to filter the store list
                 var result = stores.AsQueryable().Where(predicate.Compile()).ToList();
 
                 // Return the filtered list
@@ -52,8 +48,6 @@ namespace Wix_Technical_Test.Controllers
             }
             catch (Exception ex)
             {
-                // If there's an error in parsing or filtering, return a bad request response
-                Console.WriteLine(ex.Message);
                 return BadRequest(ex.Message);
             }
         }

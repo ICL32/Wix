@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
-using Wix_Technical_Test.Models;
+using Wix.Models;
 
-namespace Wix_Technical_Test.Controllers
+namespace Wix.Controllers
 {
     public class HomeController : Controller
     {
