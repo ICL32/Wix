@@ -19,6 +19,7 @@ namespace Wix.Controllers
             _memoryCache = memoryCache;
         }
 
+        // GET: api/store?query
         [HttpGet]
         [EnableQuery]
         public ActionResult<IEnumerable<StoreModel>> GetStores([FromQuery] string query)
@@ -26,13 +27,10 @@ namespace Wix.Controllers
             if (!_memoryCache.TryGetValue(storeCacheKey, out List<StoreModel> stores))
             {
                 stores = new List<StoreModel>();
-                // You might want to populate the cache here if it's empty.
-                // PopulateInitialStoreData(...);
             }
 
             if (string.IsNullOrEmpty(query))
             {
-                // If no query is provided, return all stores.
                 return Ok(stores);
             }
 
@@ -43,12 +41,17 @@ namespace Wix.Controllers
 
                 var result = stores.AsQueryable().Where(predicate.Compile()).ToList();
 
-                // Return the filtered list
                 return Ok(result);
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                var problemDetails = new ProblemDetails
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Bad Request",
+                    Detail = ex.Message
+                };
+                return BadRequest(problemDetails);
             }
         }
 
