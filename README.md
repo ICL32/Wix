@@ -1,26 +1,35 @@
-Thoughts:
+# Summary 
 
-I'd typically go with an int for ID but it seems from the task a string is specified. I'll set it as a key and set a string length as well.
+## Folder Structure:
+The folder consists of two.cs projects
 
-Usually timestamp isnt stored as an int but as a long within .NET as APIs with Unix time return. 
-But will still keep it as an integer as the task says.
+1 - A .cs project for the source code
+2 - A .cs project for the test code
 
-Example:
-https://learn.microsoft.com/en-us/dotnet/api/system.datetimeoffset.tounixtimeseconds?view=net-8.0
+### Source Code
 
-It seems in the post example all the fields are entered in and
-no calculations are done for time as it's a user input.
+The source folder is located under a directory called ``src`` in the root repository.
 
-# Validations:
+For this task, I followed an MVC architecture. The model defined in the task was implemented in the ``StoreModel.cs`` under the models folder.
+``/src/Wix/Models/StoreModel.cs``
 
-## Fixed size types:
+You will find the API implementation in the StoreController under the Controllers folder.
+``src/Wix/Controllers/StoreController.cs``
 
-Integers:
+The query parser can be found under the ``QueryLanguage`` folder in the ``Parser.cs`` file
+``src/Wix/QueryLanguage/Parser.cs``
+That is where the logic for parsing the query expression for the REST API is. It leverages Linq's expressions in a way that might be interesting. :D
 
-- Number isnt negative
-- Number is the right size
+### Test Code
 
-Strings:
+The test folder is located under a directory called ``tests`` in the root repository.
 
-- String limits are set for safety
-- Strings cant be null
+You will find the unit tests for the StoreController in the Controllers folder. I mirrored the folder structure of the source folder.
+``tests/Wix Unit Tests/Controllers/StoreControllerTests.cs``
+
+The reason I haven't implemented unit tests for the parser is because the parser throws errors that are pretty self explanatory, which means when the StoreControllerTests more or less cover the parser's needs. Adding tests specifically for parsing would be over-engineering in my opinion.
+
+
+
+
+
