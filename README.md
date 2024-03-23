@@ -37,3 +37,4 @@ The reason I haven't implemented unit tests for the parser is because the parser
 You will find the memory cache initialized with the data in the ``Program.cs`` file under the ``src`` folder.
 ``src/Wix/Program.cs``
 
+All the unit tests when run should pass. :)
