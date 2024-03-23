@@ -8,6 +8,8 @@ The folder consists of two.cs projects
 
 ### Source Code
 
+For this task I followed MVC architecture, you'll find a View, Controller, Model folder within the source code.
+
 The source folder is located under a directory called ``src`` in the root repository.
 
 For this task, I followed an MVC architecture. The model defined in the task was implemented in the ``StoreModel.cs`` under the models folder.
@@ -30,6 +32,8 @@ You will find the unit tests for the StoreController in the Controllers folder. 
 The reason I haven't implemented unit tests for the parser is because the parser throws errors that are pretty self explanatory, which means when the StoreControllerTests more or less cover the parser's needs. Adding tests specifically for parsing would be over-engineering in my opinion.
 
 
+## Notes
 
-
+You will find the memory cache initialized with the data in the ``Program.cs`` file under the ``src`` folder.
+``src/Wix/Program.cs``
 
