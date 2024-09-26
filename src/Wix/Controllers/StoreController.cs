@@ -95,7 +95,7 @@ namespace Wix.Controllers
             try
             {
                 _storeService.UpdateStore(id, updatedStore);
-                return Ok(updatedStore); // Return the updated store
+                return Ok(updatedStore);
             }
             catch (KeyNotFoundException ex)
             {
