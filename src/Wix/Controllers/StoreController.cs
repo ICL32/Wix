@@ -1,47 +1,31 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
-using Wix.Models;
-using Microsoft.AspNetCore.OData.Routing.Controllers;
 using Microsoft.AspNetCore.OData.Query;
-using Wix.QueryLanguage;
+using Wix.Models;
+using Wix.Services;
+using Wix.ViewModels;
 
 namespace Wix.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    public class StoreController : ODataController
+    [Route("api/store")]
+    public class StoreController : Controller
     {
-        private readonly IMemoryCache _memoryCache;
-        private static readonly string storeCacheKey = "StoreData";
+        private readonly IStoreService _storeService;
 
-        public StoreController(IMemoryCache memoryCache)
+        public StoreController(IStoreService storeService)
         {
-            _memoryCache = memoryCache;
+            _storeService = storeService;
         }
 
         // GET: api/store?query
-        [HttpGet]
+        [HttpGet("query")]
         [EnableQuery]
         public ActionResult<IEnumerable<StoreModel>> GetStores([FromQuery] string query)
         {
-            if (!_memoryCache.TryGetValue(storeCacheKey, out List<StoreModel> stores))
-            {
-                stores = new List<StoreModel>();
-            }
-
-            if (string.IsNullOrEmpty(query))
-            {
-                return Ok(stores);
-            }
-
             try
             {
-                var parser = new ExpressionParser();
-                var predicate = parser.ParseExpression<StoreModel>(query);
-
-                var result = stores.AsQueryable().Where(predicate.Compile()).ToList();
-
-                return Ok(result);
+                var stores = _storeService.GetStoresByQuery(query);
+                return View(stores);
             }
             catch (Exception ex)
             {
@@ -55,28 +39,83 @@ namespace Wix.Controllers
             }
         }
 
+        // GET: api/store
+        [HttpGet]
+        public ActionResult<StoreViewModel> GetStores()
+        {
+            var stores = _storeService.GetAllStores();
+            var viewModel = new StoreViewModel
+            {
+                Stores = stores
+            };
+            return View(viewModel);
+        }
+
+        // GET: api/store/{id}
+        [HttpGet("{id}")]
+        public ActionResult<StoreModel> GetStoreById(string id)
+        {
+            var store = _storeService.GetStoreById(id);
+            if (store == null)
+            {
+                return NotFound();
+            }
+            return Ok(store);
+        }
+
         // POST: api/store
         [HttpPost]
-        public IActionResult AddStore([FromBody] StoreModel newStore)
+        public ActionResult AddStore([FromBody] StoreModel store)
         {
-            if (!_memoryCache.TryGetValue(storeCacheKey, out List<StoreModel> stores))
+            if (store == null || !ModelState.IsValid)
             {
-                stores = new List<StoreModel>();
+                return BadRequest(ModelState);
             }
 
-            int existingStoreIndex = stores.FindIndex(x => x.Id == newStore.Id);
-            if (existingStoreIndex != -1)
+            try
             {
-                stores[existingStoreIndex] = newStore;
+                _storeService.AddStore(store);
+                return CreatedAtAction(nameof(GetStoreById), new { id = store.Id }, store);
             }
-            else
+            catch (InvalidOperationException ex)
             {
-                stores.Add(newStore);
+                return BadRequest(ex.Message);
+            }
+        }
+
+        // PUT: api/store/{id}
+        [HttpPut("{id}")]
+        public ActionResult<StoreModel> UpdateStore(string id, [FromBody] StoreModel updatedStore)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
             }
 
-            _memoryCache.Set(storeCacheKey, stores);
+            try
+            {
+                _storeService.UpdateStore(id, updatedStore);
+                return Ok(updatedStore); // Return the updated store
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+        }
 
-            return new OkObjectResult(newStore);
+        // DELETE: api/store/{id}
+        [HttpDelete("{id}")]
+        public ActionResult DeleteStore(string id)
+        {
+            try
+            {
+                _storeService.DeleteStore(id);
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
         }
     }
 }

@@ -4,7 +4,7 @@
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>Wix_Technical_Test</RootNamespace>
+    <RootNamespace>Wix</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

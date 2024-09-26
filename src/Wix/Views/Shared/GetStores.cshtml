@@ -1,0 +1,29 @@
+﻿@model Wix.ViewModels.StoreViewModel
+
+@{
+    ViewData["Title"] = "Stores";
+}
+
+<h1>Store List</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Content</th>
+            <th>Views</th>
+            <th>Time Stamp</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var store in Model.Stores)
+        {
+                <tr>
+                    <td>@store.Title</td>
+                    <td>@store.Content</td>
+                    <td>@store.Views</td>
+                    <td>@store.TimeStamp</td>
+                </tr>
+        }
+    </tbody>
+</table>
