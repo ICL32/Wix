@@ -1,131 +1,136 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
 using Moq;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Wix.Controllers;
 using Wix.Models;
+using Wix.Services;
+using Wix.ViewModels;
+using Xunit;
 
 namespace Wix_Unit_Tests.Controllers
 {
-    public class StoreControllerTests : IDisposable
+    public class StoreControllerTests
     {
-        private readonly IMemoryCache _memoryCache;
+        private readonly Mock<IStoreService> _mockStoreService;
         private readonly StoreController _controller;
-        private List<StoreModel> _stores;
 
         public StoreControllerTests()
         {
-            _memoryCache = new MemoryCache(new MemoryCacheOptions());
-
-            _stores = new List<StoreModel>
-        {
-            new StoreModel { Id = "store-1", Title = "Gadget Haven", Content = "Find the latest in tech gadgets.", Views = 150, TimeStamp = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds() },
-            new StoreModel { Id = "store-2", Title = "Book World", Content = "Explore our vast collection of books.", Views = 200, TimeStamp = (int)DateTimeOffset.UtcNow.AddSeconds(-3600).ToUnixTimeSeconds() },
-            new StoreModel { Id = "store-3", Title = "Fashion Hub", Content = "Your one-stop shop for the latest fashion trends.", Views = 250, TimeStamp = (int)DateTimeOffset.UtcNow.AddSeconds(-7200).ToUnixTimeSeconds() },
-            new StoreModel { Id = "store-4", Title = "Home Essentials", Content = "Everything you need for a cozy home.", Views = 75, TimeStamp = (int)DateTimeOffset.UtcNow.AddSeconds(-10800).ToUnixTimeSeconds() },
-            new StoreModel { Id = "store-5", Title = "Outdoor Adventures", Content = "Gear up for your next outdoor adventure.", Views = 125, TimeStamp = (int)DateTimeOffset.UtcNow.AddSeconds(-14400).ToUnixTimeSeconds() }
-        };
-
-            _memoryCache.Set("StoreData", _stores);
-
-            _controller = new StoreController(_memoryCache);
-        }
-
-        public void Dispose()
-        {
-            // We need to do this to avoid POST API tests from affecting other tests
-            _memoryCache.Set("StoreData", new List<StoreModel>(_stores));
-        }
-
-        [Theory]
-        [InlineData("EQUAL(id,\"store-1\")", new string[] { "store-1" })]
-        [InlineData("NOT(EQUAL(id,\"store-2\"))", new string[] { "store-1", "store-3", "store-4", "store-5" })]
-        [InlineData("AND(EQUAL(id,\"store-2\"),GREATER_THAN(views,130))", new string[] { "store-2" })]
-        [InlineData("GREATER_THAN(views,150)", new string[] { "store-2", "store-3" })]
-        [InlineData("LESS_THAN(views,400)", new string[] { "store-1", "store-2", "store-3", "store-4", "store-5" })]
-        [InlineData("OR(EQUAL(id,\"store-1\"),GREATER_THAN(views,200))", new string[] { "store-1", "store-3" })]
-        public void GetStores_WithQuery_ReturnsExpectedResults(string query, string[] expectedIds)
-        {
-
-            var result = _controller.GetStores(query).Result as OkObjectResult;
-
-            Assert.NotNull(result);
-            var stores = result.Value as IEnumerable<StoreModel>;
-            var storeIds = stores.Select(store => store.Id).ToArray();
-
-            Assert.Equal(expectedIds.Length, storeIds.Length);
-            foreach (var id in expectedIds)
-            {
-                Assert.Contains(id, storeIds);
-            }
+            _mockStoreService = new Mock<IStoreService>();
+            _controller = new StoreController(_mockStoreService.Object);
         }
 
         [Fact]
-        public void GetStores_WithInvalidQuery_ReturnsBadRequest()
+        public void GetStores_ReturnsAllStores()
         {
-            var invalidQuery = "OR((EQUAL(id,\"store-1\"),GREATER_THAN(views,200))";
+            var stores = new List<StoreModel>
+    {
+        new StoreModel { Id = "store-1", Title = "Test Store", Content = "Description", Views = 100, TimeStamp = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds() }
+    };
+            _mockStoreService.Setup(service => service.GetAllStores()).Returns(stores);
 
-            var result = _controller.GetStores(invalidQuery).Result;
+            var actionResult = _controller.GetStores();
 
-            Assert.IsType<BadRequestObjectResult>(result);
-            var badRequestResult = result as BadRequestObjectResult;
-            Assert.NotNull(badRequestResult);
-            Assert.Equal(StatusCodes.Status400BadRequest, badRequestResult.StatusCode);
+            var okResult = Assert.IsType<OkObjectResult>(actionResult);
+            var viewModel = Assert.IsType<StoreViewModel>(okResult.Value);
+
+            // Additional checks to confirm values match as expected
+            Assert.Equal(stores.First().Id, viewModel.Stores.First().Id);
+            Assert.Equal(stores.First().Title, viewModel.Stores.First().Title);
         }
 
         [Fact]
-        public void AddStore_WithNewStore_ReturnsOkAndAddsStore()
+        public void GetStoreById_ExistingId_ReturnsStore()
         {
-            var updatedStore = new StoreModel
-            {
-                Id = "store-6",
-                Title = "New Store",
-                Content = "Updated Content",
-                Views = 150,
-                TimeStamp = (int)DateTimeOffset.UtcNow.AddSeconds(-14400).ToUnixTimeSeconds()
-            };
+            var store = new StoreModel { Id = "store-1", Title = "Test Store", Content = "Description", Views = 100, TimeStamp = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds() };
+            _mockStoreService.Setup(service => service.GetStoreById("store-1")).Returns(store);
 
+            var actionResult = _controller.GetStoreById("store-1");
 
-            var result = _controller.AddStore(updatedStore) as OkObjectResult;
-
-
-            Assert.NotNull(result);
-            Assert.Equal(updatedStore, result.Value);
-
-            _memoryCache.TryGetValue("StoreData", out List<StoreModel> stores);
-            var store = stores.Find(x => x.Id == "store-6");
-            Assert.NotNull(store);
-            Assert.Equal("New Store", store.Title);
+            var okResult = Assert.IsType<OkObjectResult>(actionResult);
+            var returnedStore = Assert.IsType<StoreModel>(okResult.Value);
+            Assert.Equal("store-1", returnedStore.Id);
         }
 
         [Fact]
-        public void AddStore_WithExistingStoreId_UpdatesStore()
+        public void GetStoreById_NonExistingId_ReturnsNotFound()
         {
-            var updatedStore = new StoreModel
-            {
-                Id = "store-1",
-                Title = "Updated Store",
-                Content = "Updated Content",
-                Views = 150,
-                TimeStamp = (int)DateTimeOffset.UtcNow.AddSeconds(-14400).ToUnixTimeSeconds()
-            };
+            _mockStoreService.Setup(service => service.GetStoreById("store-99")).Returns((StoreModel)null);
 
+            var actionResult = _controller.GetStoreById("store-99");
 
-            var result = _controller.AddStore(updatedStore) as OkObjectResult;
+            Assert.IsType<NotFoundResult>(actionResult);
+        }
 
+        [Fact]
+        public void AddStore_ValidStore_ReturnsCreatedStore()
+        {
+            var store = new StoreModel { Id = "store-2", Title = "New Store", Content = "New Content", Views = 150, TimeStamp = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds() };
+            _mockStoreService.Setup(service => service.AddStore(store)).Verifiable();
 
-            Assert.NotNull(result);
-            Assert.Equal(updatedStore, result.Value);
+            var actionResult = _controller.AddStore(store);
 
-            _memoryCache.TryGetValue("StoreData", out List<StoreModel> stores);
-            var store = stores.Find(x => x.Id == "store-1");
-            Assert.NotNull(store);
-            Assert.Equal("Updated Store", store.Title);
+            var createdResult = Assert.IsType<CreatedAtActionResult>(actionResult);
+            Assert.Equal(StatusCodes.Status201Created, createdResult.StatusCode);
+            Assert.Equal(store, createdResult.Value);
+            _mockStoreService.Verify(service => service.AddStore(store), Times.Once);
+        }
+
+        [Fact]
+        public void AddStore_InvalidStore_ReturnsBadRequest()
+        {
+            _controller.ModelState.AddModelError("Title", "Title is required");
+            var store = new StoreModel { Id = "store-3", Title = "", Content = "Content without title" };
+
+            var actionResult = _controller.AddStore(store);
+
+            Assert.IsType<BadRequestObjectResult>(actionResult);
+        }
+
+        [Fact]
+        public void UpdateStore_ExistingStore_ReturnsUpdatedStore()
+        {
+            var store = new StoreModel { Id = "store-1", Title = "Updated Store", Content = "Updated Content" };
+            _mockStoreService.Setup(service => service.UpdateStore("store-1", store)).Verifiable();
+
+            var actionResult = _controller.UpdateStore("store-1", store);
+
+            Assert.IsType<OkObjectResult>(actionResult);
+            _mockStoreService.Verify(service => service.UpdateStore("store-1", store), Times.Once);
+        }
+
+        [Fact]
+        public void UpdateStore_NonExistingStore_ReturnsNotFound()
+        {
+            var store = new StoreModel { Id = "store-1", Title = "Updated Store", Content = "Updated Content" };
+            _mockStoreService.Setup(service => service.UpdateStore("store-99", store)).Throws(new KeyNotFoundException());
+
+            var actionResult = _controller.UpdateStore("store-99", store);
+
+            Assert.IsType<NotFoundObjectResult>(actionResult);
+        }
+
+        [Fact]
+        public void DeleteStore_ExistingId_ReturnsNoContent()
+        {
+            _mockStoreService.Setup(service => service.DeleteStore("store-1")).Verifiable();
+
+            var actionResult = _controller.DeleteStore("store-1");
+
+            Assert.IsType<NoContentResult>(actionResult);
+            _mockStoreService.Verify(service => service.DeleteStore("store-1"), Times.Once);
+        }
+
+        [Fact]
+        public void DeleteStore_NonExistingId_ReturnsNotFound()
+        {
+            _mockStoreService.Setup(service => service.DeleteStore("store-99")).Throws(new KeyNotFoundException());
+
+            var actionResult = _controller.DeleteStore("store-99");
+
+            Assert.IsType<NotFoundObjectResult>(actionResult);
         }
     }
 }

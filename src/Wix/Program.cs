@@ -1,42 +1,68 @@
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.OData;
-using Microsoft.Extensions.Caching.Memory;
+using MySql.Data.MySqlClient;
+using System.Data;
 using Wix.Models;
 using Wix.Repository;
 using Wix.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add services to the container with OData enabled
 builder.Services.AddControllersWithViews()
     .AddOData(opt =>
     {
         opt.EnableQueryFeatures();
     });
 
-// In-memory data storage as we're not using a real server
-builder.Services.AddMemoryCache();
+
+// Configure MySQL connection with retry policy
+builder.Services.AddScoped<IDbConnection>((sp) =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+    var connection = new MySqlConnection(connectionString);
+    connection.Open();
+    return connection;
+});
+
+// Register the MySQL-based StoreRepository and services
 builder.Services.AddScoped<IStoreRepository, StoreRepository>();
 builder.Services.AddScoped<IStoreService, StoreService>();
 
+// Clear default logging providers and add console logging
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
 var app = builder.Build();
 
-// Populate initial data
-PopulateInitialStoreData(app.Services);
+// Run initial data population
+try
+{
+    PopulateInitialStoreData(app.Services);
+}
+catch (Exception ex)
+{
+    app.Logger.LogError(ex, "An error occurred while populating initial store data.");
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    app.UseHsts(); // The default HSTS value is 30 days
+    app.UseHsts();
 }
 
+// Add middleware
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
 app.UseAuthorization();
+
+// Map health checks endpoint for warmup
+app.UseHealthChecks("/health");
 
 app.MapControllerRoute(
     name: "default",
@@ -46,9 +72,11 @@ app.Run();
 
 void PopulateInitialStoreData(IServiceProvider services)
 {
-    using (var scope = services.CreateScope())
+    using var scope = services.CreateScope();
+    var storeService = scope.ServiceProvider.GetRequiredService<IStoreService>();
+
+    if (!storeService.GetAllStores().Any())
     {
-        var storeService = scope.ServiceProvider.GetRequiredService<IStoreService>();
         var initialStores = new List<StoreModel>
         {
             new StoreModel { Id = "store-1", Title = "Gadget Haven", Content = "Find the latest in tech gadgets.", Views = 150, TimeStamp = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds() },

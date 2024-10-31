@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Caching.Memory;
-using Wix.Models;
+﻿using Wix.Models;
 using Wix.QueryLanguage;
 using Wix.Repository;
 
@@ -17,13 +16,10 @@ namespace Wix.Services
 
     public class StoreService : IStoreService
     {
-        private readonly IMemoryCache _memoryCache;
         private readonly IStoreRepository _storeRepository;
-        private static readonly string storeCacheKey = "StoreData";
 
-        public StoreService(IMemoryCache memoryCache, IStoreRepository storeRepository)
+        public StoreService(IStoreRepository storeRepository)
         {
-            _memoryCache = memoryCache;
             _storeRepository = storeRepository;
         }
 
@@ -58,7 +54,6 @@ namespace Wix.Services
                 throw new KeyNotFoundException($"Store with ID '{id}' not found.");
             }
 
-            // Update properties (excluding Id)
             existingStore.Title = updatedStore.Title;
             existingStore.Content = updatedStore.Content;
             existingStore.Views = updatedStore.Views;
@@ -77,10 +72,7 @@ namespace Wix.Services
 
         public IEnumerable<StoreModel> GetStoresByQuery(string query)
         {
-            if (!_memoryCache.TryGetValue(storeCacheKey, out List<StoreModel> stores))
-            {
-                stores = new List<StoreModel>();
-            }
+            var stores = _storeRepository.GetAll().ToList();
 
             if (string.IsNullOrEmpty(query))
             {
@@ -92,5 +84,4 @@ namespace Wix.Services
             return stores.AsQueryable().Where(predicate.Compile()).ToList();
         }
     }
-
 }

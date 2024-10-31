@@ -17,7 +17,6 @@ namespace Wix.Controllers
             _storeService = storeService;
         }
 
-        // GET: api/store?query
         [HttpGet("query")]
         [EnableQuery]
         public ActionResult<IEnumerable<StoreModel>> GetStores([FromQuery] string query)
@@ -25,7 +24,7 @@ namespace Wix.Controllers
             try
             {
                 var stores = _storeService.GetStoresByQuery(query);
-                return View(stores);
+                return Ok(stores);
             }
             catch (Exception ex)
             {
@@ -39,7 +38,6 @@ namespace Wix.Controllers
             }
         }
 
-        // GET: api/store
         [HttpGet]
         public ActionResult<StoreViewModel> GetStores()
         {
@@ -48,10 +46,9 @@ namespace Wix.Controllers
             {
                 Stores = stores
             };
-            return View(viewModel);
+            return Ok(viewModel);
         }
 
-        // GET: api/store/{id}
         [HttpGet("{id}")]
         public ActionResult<StoreModel> GetStoreById(string id)
         {
@@ -63,7 +60,6 @@ namespace Wix.Controllers
             return Ok(store);
         }
 
-        // POST: api/store
         [HttpPost]
         public ActionResult AddStore([FromBody] StoreModel store)
         {
@@ -83,7 +79,6 @@ namespace Wix.Controllers
             }
         }
 
-        // PUT: api/store/{id}
         [HttpPut("{id}")]
         public ActionResult<StoreModel> UpdateStore(string id, [FromBody] StoreModel updatedStore)
         {
@@ -103,7 +98,6 @@ namespace Wix.Controllers
             }
         }
 
-        // DELETE: api/store/{id}
         [HttpDelete("{id}")]
         public ActionResult DeleteStore(string id)
         {

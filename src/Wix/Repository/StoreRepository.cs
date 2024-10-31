@@ -1,5 +1,8 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+﻿using Dapper;
+using System.Data;
+using MySql.Data.MySqlClient;
 using Wix.Models;
+using Microsoft.Extensions.Configuration;
 
 namespace Wix.Repository
 {
@@ -14,59 +17,57 @@ namespace Wix.Repository
 
     public class StoreRepository : IStoreRepository
     {
-        private readonly IMemoryCache _memoryCache;
-        private const string CacheKey = "StoreData";
+        private readonly string _connectionString;
 
-        public StoreRepository(IMemoryCache memoryCache)
+        public StoreRepository(IConfiguration configuration)
         {
-            _memoryCache = memoryCache;
+            _connectionString = configuration.GetConnectionString("MySqlConnection");
         }
+
+        private IDbConnection Connection => new MySqlConnection(_connectionString);
 
         public IEnumerable<StoreModel> GetAll()
         {
-            if (_memoryCache.TryGetValue(CacheKey, out List<StoreModel> stores))
+            using (var db = Connection)
             {
-                return stores;
+                return db.Query<StoreModel>("SELECT * FROM Stores").ToList();
             }
-            return new List<StoreModel>();
         }
 
         public StoreModel? GetById(string id)
         {
-            var stores = GetAll().ToList();
-            return stores.FirstOrDefault(s => s.Id == id);
+            using (var db = Connection)
+            {
+                return db.QuerySingleOrDefault<StoreModel>("SELECT * FROM Stores WHERE Id = @Id", new { Id = id });
+            }
         }
 
         public void Add(StoreModel store)
         {
-            var stores = GetAll().ToList();
-            stores.Add(store);
-            _memoryCache.Set(CacheKey, stores);
+            using (var db = Connection)
+            {
+                string sql = "INSERT INTO Stores (Id, Title, Content, Views, TimeStamp) VALUES (@Id, @Title, @Content, @Views, @TimeStamp)";
+                db.Execute(sql, store);
+            }
         }
 
         public void Update(StoreModel store)
         {
-            var stores = GetAll().ToList();
-            var existingStore = stores.FirstOrDefault(s => s.Id == store.Id);
-            if (existingStore != null)
+            using (var db = Connection)
             {
-                stores.Remove(existingStore);
-                stores.Add(store);
-                _memoryCache.Set(CacheKey, stores);
+                string sql = "UPDATE Stores SET Title = @Title, Content = @Content, Views = @Views, TimeStamp = @TimeStamp WHERE Id = @Id";
+                db.Execute(sql, store);
             }
         }
 
         public bool Delete(string id)
         {
-            var stores = GetAll().ToList();
-            var store = stores.FirstOrDefault(s => s.Id == id);
-            if (store != null)
+            using (var db = Connection)
             {
-                stores.Remove(store);
-                _memoryCache.Set(CacheKey, stores);
-                return true;
+                string sql = "DELETE FROM Stores WHERE Id = @Id";
+                int rowsAffected = db.Execute(sql, new { Id = id });
+                return rowsAffected > 0;
             }
-            return false;
         }
     }
 }
