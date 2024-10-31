@@ -61,8 +61,7 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthorization();
 
-// Map health checks endpoint for warmup
-app.UseHealthChecks("/health");
+
 
 app.MapControllerRoute(
     name: "default",
