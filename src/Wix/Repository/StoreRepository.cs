@@ -21,7 +21,7 @@ namespace Wix.Repository
 
         public StoreRepository(IConfiguration configuration)
         {
-            _connectionString = configuration.GetConnectionString("MySqlConnection");
+            _connectionString = configuration.GetConnectionString("DefaultConnection");
         }
 
         private IDbConnection Connection => new MySqlConnection(_connectionString);

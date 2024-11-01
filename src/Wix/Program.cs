@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.OData;
 using MySql.Data.MySqlClient;
 using System.Data;
@@ -15,15 +14,50 @@ builder.Services.AddControllersWithViews()
         opt.EnableQueryFeatures();
     });
 
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+System.Diagnostics.Debug.WriteLine($"Connection String: {connectionString}");
 
-// Configure MySQL connection with retry policy
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException("Connection string is not configured correctly.");
+}
+
+// Configure MySQL connection
 builder.Services.AddScoped<IDbConnection>((sp) =>
 {
-    var configuration = sp.GetRequiredService<IConfiguration>();
-    var connectionString = configuration.GetConnectionString("DefaultConnection");
-
     var connection = new MySqlConnection(connectionString);
-    connection.Open();
+
+    try
+    {
+        connection.Open();
+        System.Diagnostics.Debug.WriteLine("Connection to the database was successful.");
+
+        // Test the connection with a simple query
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = "SELECT 1;";
+            cmd.ExecuteNonQuery(); // This should succeed if the connection is valid
+            System.Diagnostics.Debug.WriteLine("Test query executed successfully.");
+        }
+
+        // Set the database context
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = "USE lithuania-wix;";
+            cmd.ExecuteNonQuery();
+        }
+    }
+    catch (MySqlException ex)
+    {
+        System.Diagnostics.Debug.WriteLine($"MySQL error: {ex.Message} - {ex.StackTrace}");
+        throw new Exception("Unable to connect to the MySQL database.", ex);
+    }
+    catch (Exception ex)
+    {
+        System.Diagnostics.Debug.WriteLine($"An unexpected error occurred: {ex.Message}");
+        throw new Exception("An unexpected error occurred while connecting to the database.", ex);
+    }
+
     return connection;
 });
 
@@ -31,13 +65,11 @@ builder.Services.AddScoped<IDbConnection>((sp) =>
 builder.Services.AddScoped<IStoreRepository, StoreRepository>();
 builder.Services.AddScoped<IStoreService, StoreService>();
 
-// Clear default logging providers and add console logging
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
 var app = builder.Build();
 
-// Run initial data population
 try
 {
     PopulateInitialStoreData(app.Services);
@@ -47,21 +79,17 @@ catch (Exception ex)
     app.Logger.LogError(ex, "An error occurred while populating initial store data.");
 }
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
 
-// Add middleware
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
 app.UseAuthorization();
-
-
 
 app.MapControllerRoute(
     name: "default",
